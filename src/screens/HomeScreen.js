@@ -19,7 +19,7 @@ import { ACCENT, BG, SURFACE, TEXT } from '../theme/colors';
 
 /** Payment List grid — matches reference: colorful icons on light squircles */
 const CATEGORIES = [
-  { id: 'flat', label: 'Flat', icon: 'business-outline', color: '#3B82F6' },
+  { id: 'flat', label: 'Flat', icon: 'bed', color: '#3B82F6' },
   { id: 'shop', label: 'Shop', icon: 'storefront-outline', color: '#22C55E' },
   { id: 'office', label: 'Office', icon: 'briefcase-outline', color: '#F59E0B' },
   { id: 'pg', label: 'PG/Hostel', icon: 'bed-outline', color: '#8B5CF6' },
