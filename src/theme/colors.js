@@ -1,12 +1,12 @@
-/** Light theme + purple accent (wallet-style UI) */
+/** Light theme + blue accent (aligned with tab bar navy) */
 
-export const ACCENT = '#7C3AED';
-export const ACCENT_DARK = '#6D28D9';
-export const ACCENT_LIGHT = '#8B5CF6';
-export const ACCENT_DEEP = '#4C1D95';
+export const ACCENT = '#2563EB';
+export const ACCENT_DARK = '#1D4ED8';
+export const ACCENT_LIGHT = '#3B82F6';
+export const ACCENT_DEEP = '#1E3A8A';
 
 /** rgba accent for overlays */
-export const ACCENT_ALPHA = (a) => `rgba(124, 58, 237, ${a})`;
+export const ACCENT_ALPHA = (a) => `rgba(37, 99, 235, ${a})`;
 
 export const BG = {
   top: '#F8FAFC',

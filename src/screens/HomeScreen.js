@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -15,31 +16,33 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { PlaceholderTabScreen } from './PlaceholderTabScreen';
+import { ViewPropertyList } from './ViewPropertyList';
+import { AddPropertyScreen } from './AddPropertyScreen';
 import { ACCENT, BG, SURFACE, TEXT } from '../theme/colors';
 
 /** Payment List grid — matches reference: colorful icons on light squircles */
 const CATEGORIES = [
   { id: 'flat', label: 'Flat', icon: 'bed', color: '#3B82F6' },
-  { id: 'shop', label: 'Shop', icon: 'storefront-outline', color: '#22C55E' },
-  { id: 'office', label: 'Office', icon: 'briefcase-outline', color: '#F59E0B' },
-  { id: 'pg', label: 'PG/Hostel', icon: 'bed-outline', color: '#8B5CF6' },
-  { id: 'parking', label: 'Parking', icon: 'car-outline', color: '#EF4444' },
-  { id: 'warehouse', label: 'Warehouse', icon: 'cube-outline', color: '#06B6D4' },
-  { id: 'sharing', label: 'Room Sharing', icon: 'people-outline', color: '#EC4899' },
-  { id: 'more', label: 'More', icon: 'apps-outline', color: '#7C3AED' },
+  { id: 'shop', label: 'Shop', icon: 'storefront-outline', color: '#22C55E', iconSource: require('../Icons/store.png') },
+  { id: 'office', label: 'Office', icon: 'briefcase-outline', color: '#F59E0B', iconSource: require('../Icons/office.png') },
+  { id: 'pg', label: 'PG/Hostel', icon: 'bed-outline', color: '#6366F1', iconSource: require('../Icons/hostel.png') },
+  { id: 'parking', label: 'Parking', icon: 'car-outline', color: '#EF4444', iconSource: require('../Icons/parking.png') },
+  { id: 'warehouse', label: 'Warehouse', icon: 'cube-outline', color: '#06B6D4', iconSource: require('../Icons/warehouse.png') },
+  { id: 'sharing', label: 'Room Sharing', icon: 'people-outline', color: '#EC4899', iconSource: require('../Icons/shared-housing.png') },
+  { id: 'more', label: 'More', icon: 'apps-outline', color: '#2563EB' },
 ];
 
 const QUICK_ACTIONS = [
-  { key: 'buy', label: 'Buy', icon: 'cart-outline' },
-  { key: 'sell', label: 'Sell', icon: 'cash-outline' },
-  { key: 'rent', label: 'Rent', icon: 'key-outline' },
-  { key: 'explore', label: 'Explore', icon: 'search-outline' },
+  { key: 'wishlist', label: 'Fevorites', icon: 'heart-outline' },
+  { key: 'noBrokerage', label: 'No Brokerage', icon: 'pricetag-outline' },
+  { key: 'virtualTour', label: 'Virtual Tour', icon: 'cube-outline' },
+  { key: 'bestDeal', label: 'Best Deals', icon: 'flame-outline' },
 ];
 
-const PURPLE_HEADER = ['#3B0764', '#581C87', '#6D28D9'];
-const PROMO_PURPLE = ['#4C1D95', '#6B21A8', '#7C3AED'];
+const PURPLE_HEADER = ['#1D4ED8', '#3B82F6', '#3B82F6'];
+const PROMO_GRADIENT = ['#1E3A8A', '#1D4ED8', '#2563EB'];
 const CATEGORY_TILE_BG = '#F8F9FB';
-const QUICK_ICON_RING = '#DDD6FE';
+const QUICK_ICON_RING = '#BFDBFE';
 
 /**
  * Height of the tab bar chrome that overlaps scrollable content (bar row + vertical padding).
@@ -54,6 +57,7 @@ const CATEGORY_H_PAD = 18;
 export function HomeScreen() {
   const [tab, setTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('flat');
+  const [propertyListOpen, setPropertyListOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
 
@@ -62,6 +66,20 @@ export function HomeScreen() {
   const categoryCellWidth = Math.floor(
     (windowWidth - CATEGORY_H_PAD * 2 - CATEGORY_GRID_GAP * (CATEGORY_GRID_COLS - 1)) / CATEGORY_GRID_COLS,
   );
+
+  const selectedCat = CATEGORIES.find((c) => c.id === selectedCategory) ?? CATEGORIES[0];
+
+  useEffect(() => {
+    if (tab !== 'home') setPropertyListOpen(false);
+  }, [tab]);
+
+  if (propertyListOpen && tab === 'home') {
+    return (
+      <View style={styles.shell}>
+        <ViewPropertyList category={selectedCat} onBack={() => setPropertyListOpen(false)} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.shell}>
@@ -115,7 +133,7 @@ export function HomeScreen() {
                       style={styles.searchHeroInput}
                       returnKeyType="search"
                       cursorColor={ACCENT}
-                      selectionColor="rgba(124, 58, 237, 0.35)"
+                      selectionColor="rgba(37, 99, 235, 0.35)"
                       editable={false}
                       pointerEvents="none"
                     />
@@ -154,7 +172,6 @@ export function HomeScreen() {
               contentContainerStyle={styles.homeScrollContent}
               showsVerticalScrollIndicator={false}
             >
-              <Text style={styles.categorySectionTitle}>Payment List</Text>
               <View style={styles.categoryGrid}>
                 {CATEGORIES.map((c) => (
                   <CategoryGlassChip
@@ -162,10 +179,14 @@ export function HomeScreen() {
                     c={c}
                     tileWidth={categoryCellWidth}
                     active={selectedCategory === c.id}
-                    onPress={() => setSelectedCategory(c.id)}
+                    onPress={() => {
+                      setSelectedCategory(c.id);
+                      setPropertyListOpen(true);
+                    }}
                   />
                 ))}
               </View>
+
 
               <View style={styles.promoHeaderRow}>
                 <Text style={styles.promoSectionTitle}>Promo & Discount</Text>
@@ -174,7 +195,7 @@ export function HomeScreen() {
                 </TouchableOpacity>
               </View>
 
-              <LinearGradient colors={PROMO_PURPLE} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.promoCard}>
+              <LinearGradient colors={PROMO_GRADIENT} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.promoCard}>
                 <View style={[styles.promoBlob, styles.promoBlob1]} />
                 <View style={[styles.promoBlob, styles.promoBlob2]} />
                 <View style={[styles.promoBlob, styles.promoBlob3]} />
@@ -191,8 +212,8 @@ export function HomeScreen() {
           </View>
         )}
         {tab === 'add' && (
-          <View style={[styles.tabPane, { paddingBottom: tabBarPad }]}>
-            <PlaceholderTabScreen title="Add property" />
+          <View style={StyleSheet.absoluteFill}>
+            <AddPropertyScreen onClose={() => setTab('home')} />
           </View>
         )}
         {tab === 'bookmark' && (
@@ -207,7 +228,9 @@ export function HomeScreen() {
         )}
       </SafeAreaView>
 
-      <BottomTabBar activeKey={tab} onTabChange={setTab} bottomInset={insets.bottom} />
+      {tab !== 'add' && (
+        <BottomTabBar activeKey={tab} onTabChange={setTab} bottomInset={insets.bottom} />
+      )}
     </View>
   );
 }
@@ -231,6 +254,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: CATEGORY_H_PAD,
     paddingTop: 32,
     paddingBottom: 50,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   headerTopRow: {
     flexDirection: 'row',
@@ -277,7 +302,7 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 12,
-    backgroundColor: 'rgba(124, 58, 237, 0.1)',
+    backgroundColor: 'rgba(37, 99, 235, 0.1)',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
@@ -432,7 +457,69 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: CATEGORY_GRID_GAP,
+    marginBottom: 16,
+    marginTop: 10,
+  },
+  viewListCta: {
+    borderRadius: 18,
+    overflow: 'hidden',
     marginBottom: 24,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#1E40AF',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.28,
+        shadowRadius: 18,
+      },
+      android: { elevation: 8 },
+      default: {},
+    }),
+  },
+  viewListCtaGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+  },
+  viewListCtaLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 14,
+  },
+  viewListCtaIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.35)',
+  },
+  viewListCtaTextCol: {
+    flex: 1,
+  },
+  viewListCtaTitle: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    letterSpacing: -0.35,
+  },
+  viewListCtaSub: {
+    marginTop: 4,
+    fontSize: 13,
+    fontWeight: '600',
+    color: 'rgba(255,255,255,0.88)',
+  },
+  viewListCtaChevron: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: 'rgba(15,23,42,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   categoryTile: {
     alignItems: 'stretch',
@@ -456,9 +543,13 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(15, 23, 42, 0.06)',
   },
   categoryIconSquircleActive: {
-    backgroundColor: '#FAF5FF',
+    backgroundColor: '#EFF6FF',
     borderWidth: 2,
     borderColor: ACCENT,
+  },
+  categoryIconImage: {
+    width: 30,
+    height: 30,
   },
   categoryLabel: {
     fontSize: 11,
@@ -477,6 +568,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 12,
+
   },
   promoSectionTitle: {
     fontSize: 17,
@@ -542,7 +634,6 @@ const styles = StyleSheet.create({
 });
 
 function CategoryGlassChip({ c, active, onPress, tileWidth }) {
-  const iconColor = active ? ACCENT : c.color;
   return (
     <TouchableOpacity
       style={[styles.categoryTile, { width: tileWidth }]}
@@ -554,7 +645,11 @@ function CategoryGlassChip({ c, active, onPress, tileWidth }) {
     >
       <View style={styles.categoryCellInner}>
         <View style={[styles.categoryIconSquircle, active && styles.categoryIconSquircleActive]}>
-          <Ionicons name={c.icon} size={26} color={iconColor} />
+          {c.iconSource ? (
+            <Image source={c.iconSource} style={styles.categoryIconImage} resizeMode="contain" accessibilityIgnoresInvertColors />
+          ) : (
+            <Ionicons name={c.icon} size={26} color={active ? ACCENT : c.color} />
+          )}
         </View>
         <Text style={[styles.categoryLabel, active && styles.categoryLabelActive]} numberOfLines={2}>
           {c.label}
