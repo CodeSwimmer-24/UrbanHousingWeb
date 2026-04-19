@@ -18,6 +18,7 @@ import { BottomTabBar } from '../components/BottomTabBar';
 import { PlaceholderTabScreen } from './PlaceholderTabScreen';
 import { ViewPropertyList } from './ViewPropertyList';
 import { AddPropertyScreen } from './AddPropertyScreen';
+import { PropertyOwnerDashboardScreen } from './PropertyOwnerDashboardScreen';
 import { ACCENT, BG, SURFACE, TEXT } from '../theme/colors';
 
 /** Payment List grid — matches reference: colorful icons on light squircles */
@@ -58,6 +59,8 @@ export function HomeScreen() {
   const [tab, setTab] = useState('home');
   const [selectedCategory, setSelectedCategory] = useState('flat');
   const [propertyListOpen, setPropertyListOpen] = useState(false);
+  /** `true` = listing published: middle tab becomes Dashboard instead of Add. Toggle to switch flows. */
+  const [hasPublishedListing, setHasPublishedListing] = useState(true);
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
 
@@ -72,6 +75,15 @@ export function HomeScreen() {
   useEffect(() => {
     if (tab !== 'home') setPropertyListOpen(false);
   }, [tab]);
+
+  useEffect(() => {
+    if (hasPublishedListing && tab === 'add') {
+      setTab('dashboard');
+    }
+    if (!hasPublishedListing && tab === 'dashboard') {
+      setTab('home');
+    }
+  }, [hasPublishedListing, tab]);
 
   if (propertyListOpen && tab === 'home') {
     return (
@@ -211,9 +223,29 @@ export function HomeScreen() {
             <PlaceholderTabScreen title="Search" />
           </View>
         )}
-        {tab === 'add' && (
+        {tab === 'add' && !hasPublishedListing && (
           <View style={StyleSheet.absoluteFill}>
-            <AddPropertyScreen onClose={() => setTab('home')} />
+            <AddPropertyScreen
+              onClose={() => setTab('home')}
+              onListingPublished={() => {
+                setHasPublishedListing(true);
+                setTab('dashboard');
+              }}
+            />
+          </View>
+        )}
+        {tab === 'dashboard' && hasPublishedListing && (
+          <View style={[styles.tabPane, { paddingBottom: tabBarPad }]}>
+            <PropertyOwnerDashboardScreen
+              onDeleteListing={() => {
+                setHasPublishedListing(false);
+                setTab('home');
+              }}
+              onMarkSold={() => {
+                setHasPublishedListing(false);
+                setTab('home');
+              }}
+            />
           </View>
         )}
         {tab === 'bookmark' && (
@@ -229,7 +261,12 @@ export function HomeScreen() {
       </SafeAreaView>
 
       {tab !== 'add' && (
-        <BottomTabBar activeKey={tab} onTabChange={setTab} bottomInset={insets.bottom} />
+        <BottomTabBar
+          activeKey={tab}
+          onTabChange={setTab}
+          bottomInset={insets.bottom}
+          hasPublishedListing={hasPublishedListing}
+        />
       )}
     </View>
   );

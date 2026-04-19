@@ -950,7 +950,7 @@ const s5 = StyleSheet.create({
 });
 
 /* ─── Main Screen ───────────────────────────────────────────────────────────── */
-export function AddPropertyScreen({ onClose }) {
+export function AddPropertyScreen({ onClose, onListingPublished }) {
   const insets = useSafeAreaInsets();
   const scrollRef = useRef(null);
   const [step, setStep] = useState(1);
@@ -1034,7 +1034,14 @@ export function AddPropertyScreen({ onClose }) {
     Alert.alert(
       'Property Submitted!',
       'Your listing has been submitted. It will go live after a quick review.',
-      [{ text: 'Great!', onPress: () => onClose?.() }],
+      [
+        {
+          text: 'Great!',
+          onPress: () => {
+            onListingPublished?.();
+          },
+        },
+      ],
     );
   };
 

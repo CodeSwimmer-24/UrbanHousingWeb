@@ -4,13 +4,19 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { ACCENT, ACCENT_DARK, ACCENT_LIGHT, TEXT } from '../theme/colors';
 
-const TABS = [
+const STATIC_TABS = [
   { key: 'home', label: 'Home', icon: 'home-outline', iconActive: 'home' },
   { key: 'search', label: 'Search', icon: 'search-outline', iconActive: 'search' },
-  { key: 'add', label: 'Add', fab: true },
   { key: 'bookmark', label: 'Bookmark', icon: 'bookmark-outline', iconActive: 'bookmark' },
   { key: 'profile', label: 'Profile', icon: 'person-outline', iconActive: 'person' },
 ];
+
+function buildTabs(hasPublishedListing) {
+  const middle = hasPublishedListing
+    ? { key: 'dashboard', label: 'Dashboard', fab: true, fabIcon: 'grid' }
+    : { key: 'add', label: 'Add', fab: true, fabIcon: 'add' };
+  return [STATIC_TABS[0], STATIC_TABS[1], middle, STATIC_TABS[2], STATIC_TABS[3]];
+}
 
 function TabBarSheen() {
   return (
@@ -25,7 +31,8 @@ function TabBarSheen() {
   );
 }
 
-export function BottomTabBar({ activeKey, onTabChange, bottomInset = 0 }) {
+export function BottomTabBar({ activeKey, onTabChange, bottomInset = 0, hasPublishedListing = false }) {
+  const TABS = buildTabs(hasPublishedListing);
   const tabsContent = (
     <>
       <View style={styles.barTint} pointerEvents="none" />
@@ -33,17 +40,19 @@ export function BottomTabBar({ activeKey, onTabChange, bottomInset = 0 }) {
       <View style={styles.barInner}>
         {TABS.map((tab) => {
           if (tab.fab) {
-            const addActive = activeKey === 'add';
+            const fabActive = activeKey === tab.key;
+            const fabIcon = tab.fabIcon === 'grid' ? 'grid' : 'add';
+            const fabSize = tab.fabIcon === 'grid' ? 26 : 32;
             return (
               <View key={tab.key} style={styles.fabSlot}>
                 <TouchableOpacity
                   style={styles.fabTouchable}
                   activeOpacity={0.92}
-                  onPress={() => onTabChange('add')}
+                  onPress={() => onTabChange(tab.key)}
                   accessibilityRole="button"
-                  accessibilityLabel="Add property"
+                  accessibilityLabel={tab.key === 'dashboard' ? 'Listing dashboard' : 'Add property'}
                 >
-                  <View style={[styles.fabGlassRing, addActive && styles.fabGlassRingActive]}>
+                  <View style={[styles.fabGlassRing, fabActive && styles.fabGlassRingActive]}>
                     <LinearGradient
                       colors={[ACCENT_LIGHT, ACCENT, ACCENT_DARK, '#172554']}
                       locations={[0, 0.25, 0.65, 1]}
@@ -60,12 +69,12 @@ export function BottomTabBar({ activeKey, onTabChange, bottomInset = 0 }) {
                         pointerEvents="none"
                       />
                       <View style={styles.fabIconLayer} pointerEvents="none">
-                        <Ionicons name="add" size={32} color="#FFFFFF" />
+                        <Ionicons name={fabIcon} size={fabSize} color="#FFFFFF" />
                       </View>
                     </LinearGradient>
                   </View>
                 </TouchableOpacity>
-                <Text style={[styles.fabLabel, addActive && styles.labelFabActive]}>{tab.label}</Text>
+                <Text style={[styles.fabLabel, fabActive && styles.labelFabActive]}>{tab.label}</Text>
               </View>
             );
           }
