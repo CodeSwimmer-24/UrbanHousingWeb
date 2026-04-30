@@ -1,0 +1,185 @@
+import { StyleSheet } from 'react-native';
+import { ACCENT, SURFACE, TEXT } from '../../theme/colors';
+
+export const dashboardScreenStyles = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#F8FAFC' },
+
+  pageHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 20, paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1, borderBottomColor: 'rgba(15,23,42,0.06)',
+  },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  avatarCircle: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: ACCENT + '30',
+  },
+  greetLabel: { fontSize: 17, fontWeight: '700', color: TEXT.primary, letterSpacing: -0.3 },
+  greetSub: { fontSize: 12, color: TEXT.tertiary, marginTop: 1 },
+  notifBtn: {
+    width: 42, height: 42, borderRadius: 21,
+    backgroundColor: SURFACE, alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: 'rgba(15,23,42,0.08)',
+    shadowColor: '#0F172A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.06, shadowRadius: 4, elevation: 2,
+  },
+  notifDot: {
+    position: 'absolute', top: 9, right: 10,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#EF4444', borderWidth: 1.5, borderColor: '#fff',
+  },
+
+  tabsWrap: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(15,23,42,0.07)',
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  tabBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 12,
+    paddingBottom: 0,
+    gap: 4,
+    position: 'relative',
+  },
+  tabIconWrap: {
+    width: 40, height: 40, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  tabIconWrapActive: {
+    backgroundColor: ACCENT + '12',
+  },
+  tabLabel: {
+    fontSize: 11, fontWeight: '600',
+    color: TEXT.tertiary,
+    marginBottom: 10,
+  },
+  tabLabelActive: {
+    color: ACCENT,
+    fontWeight: '700',
+  },
+  tabIndicator: {
+    position: 'absolute',
+    bottom: 0,
+    left: '15%',
+    right: '15%',
+    height: 3,
+    borderRadius: 3,
+    backgroundColor: ACCENT,
+  },
+
+  listingCard: {
+    marginHorizontal: 20, marginTop: 16,
+    borderRadius: 24, overflow: 'hidden',
+    shadowColor: '#0F172A', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.22, shadowRadius: 24, elevation: 10,
+  },
+  listingCardGrad: { padding: 22, position: 'relative', overflow: 'hidden' },
+  ring1: { position: 'absolute', width: 240, height: 240, borderRadius: 120, borderWidth: 1, borderColor: 'rgba(255,255,255,0.06)', top: -80, right: -60 },
+  ring2: { position: 'absolute', width: 160, height: 160, borderRadius: 80, borderWidth: 1, borderColor: 'rgba(255,255,255,0.04)', top: -20, right: -10 },
+  ring3: { position: 'absolute', width: 90, height: 90, borderRadius: 45, borderWidth: 1, borderColor: 'rgba(255,255,255,0.05)', bottom: 20, left: -20 },
+  listingCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 },
+  liveDot: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: 'rgba(34,197,94,0.18)',
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(34,197,94,0.3)',
+  },
+  livePulse: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#22C55E' },
+  liveText: { fontSize: 10, fontWeight: '700', color: '#22C55E', letterSpacing: 0.5 },
+  listingTypePill: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)',
+  },
+  listingTypeText: { fontSize: 11, color: 'rgba(255,255,255,0.85)', fontWeight: '600' },
+  listingCardTitle: { fontSize: 20, fontWeight: '700', color: '#fff', letterSpacing: -0.5, lineHeight: 26 },
+  listingCardMeta: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 6 },
+  listingCardMetaText: { fontSize: 12.5, color: 'rgba(255,255,255,0.55)', fontWeight: '500' },
+  listingStatsRow: {
+    flexDirection: 'row', marginTop: 18, paddingTop: 16,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.1)',
+  },
+  listingStatCell: { flex: 1, alignItems: 'center', gap: 3 },
+  listingStatVal: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  listingStatLabel: { fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: '500' },
+
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: TEXT.primary, marginBottom: 12 },
+
+  quickSection: { paddingHorizontal: 20, marginTop: 20 },
+  quickRow: { flexDirection: 'row', gap: 10 },
+  quickCard: {
+    flex: 1, borderRadius: 16, padding: 14, alignItems: 'center', gap: 8,
+    borderWidth: 1,
+    shadowColor: '#0F172A', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.04, shadowRadius: 4, elevation: 1,
+  },
+  quickIconWrap: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  quickCardLabel: { fontSize: 11, fontWeight: '700', textAlign: 'center', lineHeight: 14 },
+
+  tabContent: { paddingTop: 4 },
+  tabContentHead: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    marginHorizontal: 20, marginTop: 16, marginBottom: 14,
+  },
+  tabContentIcon: { width: 42, height: 42, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  tabContentTitle: { fontSize: 16, fontWeight: '700', color: TEXT.primary },
+  tabContentSub: { fontSize: 12, color: TEXT.tertiary, marginTop: 1 },
+
+  summaryRow: { flexDirection: 'row', marginHorizontal: 20, marginBottom: 14, gap: 10 },
+  summaryCard: { flex: 1, borderRadius: 14, padding: 12, alignItems: 'center', gap: 2 },
+  summaryVal: { fontSize: 20, fontWeight: '800', letterSpacing: -0.5 },
+  summaryLabel: { fontSize: 10.5, fontWeight: '600', textAlign: 'center' },
+
+  addPropertyBtn: {
+    marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 4,
+    backgroundColor: ACCENT, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12,
+  },
+  addPropertyText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+
+  propertyCard: {
+    marginHorizontal: 20, marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
+    borderWidth: 1, borderColor: 'rgba(15,23,42,0.07)',
+    shadowColor: '#0F172A', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3,
+    overflow: 'hidden',
+  },
+  propertyCardInner: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  propertyIconBlock: { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  propertyBody: { flex: 1, gap: 4 },
+  propertyTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  propertyTitle: { flex: 1, fontSize: 14, fontWeight: '700', color: TEXT.primary },
+  propertySubtitle: { fontSize: 12, color: TEXT.secondary },
+  propertyPriceRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 },
+  typePill: { backgroundColor: '#EFF6FF', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 6 },
+  typeText: { fontSize: 10, fontWeight: '700', color: ACCENT },
+  propertyPrice: { fontSize: 13, fontWeight: '700', color: TEXT.primary },
+
+  statusPill: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 20 },
+  statusLive: { backgroundColor: '#DCFCE7' },
+  statusSold: { backgroundColor: '#EDE9FE' },
+  statusDot: { width: 5, height: 5, borderRadius: 3 },
+  statusText: { fontSize: 10, fontWeight: '700' },
+
+  propertyDivider: { height: 1, backgroundColor: '#F1F5F9', marginHorizontal: 14 },
+  propertyActionsRow: { flexDirection: 'row', gap: 0 },
+  propertyActionBtn: {
+    flex: 1, paddingVertical: 11,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5,
+    borderRightWidth: 1, borderRightColor: '#F1F5F9',
+  },
+  propertyActionText: { fontSize: 12, fontWeight: '700' },
+  editAction: {},
+  soldAction: {},
+  deleteAction: { borderRightWidth: 0 },
+});

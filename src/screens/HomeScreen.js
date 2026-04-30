@@ -16,6 +16,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { PlaceholderTabScreen } from './PlaceholderTabScreen';
+import { ProfileScreen } from './ProfileScreen';
+import { SearchScreen } from './SearchScreen';
 import { ViewPropertyList } from './ViewPropertyList';
 import { AddPropertyScreen } from './AddPropertyScreen';
 import { PropertyOwnerDashboardScreen } from './PropertyOwnerDashboardScreen';
@@ -61,6 +63,8 @@ export function HomeScreen() {
   const [propertyListOpen, setPropertyListOpen] = useState(false);
   /** `true` = listing published: middle tab becomes Dashboard instead of Add. Toggle to switch flows. */
   const [hasPublishedListing, setHasPublishedListing] = useState(true);
+  /** Same `AddPropertyScreen` fullscreen flow as middle Add tab, opened from Dashboard → Properties → Add */
+  const [addListingOverlayOpen, setAddListingOverlayOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const { width: windowWidth } = useWindowDimensions();
 
@@ -219,24 +223,14 @@ export function HomeScreen() {
         )}
 
         {tab === 'search' && (
-          <View style={[styles.tabPane, { paddingBottom: tabBarPad }]}>
-            <PlaceholderTabScreen title="Search" />
-          </View>
-        )}
-        {tab === 'add' && !hasPublishedListing && (
-          <View style={StyleSheet.absoluteFill}>
-            <AddPropertyScreen
-              onClose={() => setTab('home')}
-              onListingPublished={() => {
-                setHasPublishedListing(true);
-                setTab('dashboard');
-              }}
-            />
+          <View style={styles.tabPane}>
+            <SearchScreen />
           </View>
         )}
         {tab === 'dashboard' && hasPublishedListing && (
           <View style={[styles.tabPane, { paddingBottom: tabBarPad }]}>
             <PropertyOwnerDashboardScreen
+              onAddMoreListing={() => setAddListingOverlayOpen(true)}
               onDeleteListing={() => {
                 setHasPublishedListing(false);
                 setTab('home');
@@ -248,19 +242,34 @@ export function HomeScreen() {
             />
           </View>
         )}
+        {((tab === 'add' && !hasPublishedListing) || addListingOverlayOpen) && (
+          <View style={[StyleSheet.absoluteFill, styles.addPropertyOverlay]}>
+            <AddPropertyScreen
+              onClose={() => {
+                setAddListingOverlayOpen(false);
+                if (tab === 'add') setTab('home');
+              }}
+              onListingPublished={() => {
+                setHasPublishedListing(true);
+                setAddListingOverlayOpen(false);
+                setTab('dashboard');
+              }}
+            />
+          </View>
+        )}
         {tab === 'bookmark' && (
           <View style={[styles.tabPane, { paddingBottom: tabBarPad }]}>
             <PlaceholderTabScreen title="Bookmark" />
           </View>
         )}
         {tab === 'profile' && (
-          <View style={[styles.tabPane, { paddingBottom: tabBarPad }]}>
-            <PlaceholderTabScreen title="Profile" />
+          <View style={styles.tabPane}>
+            <ProfileScreen />
           </View>
         )}
       </SafeAreaView>
 
-      {tab !== 'add' && (
+      {tab !== 'add' && !addListingOverlayOpen && (
         <BottomTabBar
           activeKey={tab}
           onTabChange={setTab}
@@ -282,6 +291,10 @@ const styles = StyleSheet.create({
   },
   tabPane: {
     flex: 1,
+  },
+  addPropertyOverlay: {
+    zIndex: 50,
+    elevation: 50,
   },
   homeLayout: {
     flex: 1,

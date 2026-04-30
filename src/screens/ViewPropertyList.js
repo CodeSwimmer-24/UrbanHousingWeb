@@ -1,21 +1,25 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   FlatList,
+  KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { PropertyCard } from '../components/PropertyCard';
 import { PropertyDetailScreen } from './PropertyDetailScreen';
 import { getPropertiesForCategory } from '../data/mockProperties';
-import { ACCENT, ACCENT_DEEP, ACCENT_LIGHT, BG, SURFACE, TEXT } from '../theme/colors';
+import { ACCENT, ACCENT_DARK, ACCENT_DEEP, ACCENT_LIGHT, BG, SURFACE, TEXT } from '../theme/colors';
 
 /** @typedef {'all'|'3bhk'|'2bhk'|'1bhk'|'1rk'} LayoutFilterKey */
 
@@ -100,23 +104,48 @@ function LayoutFilterChip({ selected, onPress, icon, label }) {
  *
  * @param {{ category: { id: string; label: string; icon?: string; color?: string; iconSource?: number }; onBack: () => void; onFilterPress?: () => void }} props
  */
-export function ViewPropertyList({ category, onBack, onFilterPress = () => { } }) {
+export function ViewPropertyList({ category, onBack, onFilterPress }) {
   const [activeLayoutKey, setActiveLayoutKey] = useState(/** @type {LayoutFilterKey} */('all'));
   const [detailProperty, setDetailProperty] = useState(/** @type {object | null} */(null));
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
+  const [sheetFilters, setSheetFilters] = useState({ ...DEFAULT_SHEET_FILTERS });
 
   const baseProperties = useMemo(() => getPropertiesForCategory(category.id), [category.id]);
 
-  const filteredProperties = useMemo(
-    () => filterByLayoutKey(baseProperties, activeLayoutKey),
-    [baseProperties, activeLayoutKey],
-  );
+  const filteredProperties = useMemo(() => {
+    let list = filterByLayoutKey(baseProperties, activeLayoutKey);
+
+    /* price range */
+    const mn = priceNum(sheetFilters.minPrice);
+    const mx = priceNum(sheetFilters.maxPrice);
+    if (mn) list = list.filter((p) => priceNum(p.price) >= mn);
+    if (mx) list = list.filter((p) => priceNum(p.price) <= mx);
+
+    /* bhk */
+    if (sheetFilters.bhk !== 'All') {
+      list = list.filter((p) => {
+        const b = p.bhk ?? '';
+        if (sheetFilters.bhk === 'Studio') return b === '0' || b === '';
+        if (sheetFilters.bhk.includes('4+')) return parseInt(b, 10) >= 4;
+        return b === (sheetFilters.bhk.match(/\d+/)?.[0] ?? '');
+      });
+    }
+
+    return list;
+  }, [baseProperties, activeLayoutKey, sheetFilters]);
 
   useEffect(() => {
     setActiveLayoutKey('all');
     setDetailProperty(null);
+    setSheetFilters({ ...DEFAULT_SHEET_FILTERS });
   }, [category.id]);
 
-  const layoutLabel = LAYOUT_FILTER_LABELS[activeLayoutKey];
+  const fc = countSheetFilters(sheetFilters);
+
+  const handleApply = (f) => {
+    setSheetFilters(f);
+    setFilterSheetOpen(false);
+  };
 
   if (detailProperty) {
     return (
@@ -146,37 +175,32 @@ export function ViewPropertyList({ category, onBack, onFilterPress = () => { } }
             </Pressable>
             <View style={styles.headerTitleBlock}>
               <Text style={styles.headerEyebrow}>Browse listings</Text>
-              <Text style={styles.headerTitle}>Properties</Text>
+              <Text style={styles.headerTitle}>{category.label}</Text>
             </View>
             <Pressable
-              onPress={onFilterPress}
+              onPress={() => setFilterSheetOpen(true)}
               style={({ pressed }) => [styles.headerIconBtn, pressed && styles.headerIconBtnPressed]}
               accessibilityRole="button"
               accessibilityLabel="Open filters"
             >
               <Ionicons name="options-outline" size={19} color="#FFFFFF" />
+              {fc > 0 && <View style={styles.filterDot} />}
             </Pressable>
           </View>
 
-          {/* <View style={styles.filterCard}>
-            <View style={[styles.filterIconRing, { borderColor: `${category.color ?? ACCENT}55` }]}>
-              {category.iconSource ? (
-                <Image source={category.iconSource} style={styles.filterIconImg} resizeMode="contain" />
-              ) : (
-                <Ionicons name={category.icon ?? 'apps-outline'} size={22} color={category.color ?? ACCENT} />
-              )}
+          {/* active filter summary strip */}
+          {fc > 0 && (
+            <View style={styles.activeStrip}>
+              <Ionicons name="funnel" size={12} color="rgba(255,255,255,0.85)" />
+              <Text style={styles.activeStripText}>
+                {fc} filter{fc > 1 ? 's' : ''} active · {filteredProperties.length} result{filteredProperties.length !== 1 ? 's' : ''}
+              </Text>
+              <TouchableOpacity onPress={() => setSheetFilters({ ...DEFAULT_SHEET_FILTERS })} activeOpacity={0.8}>
+                <Text style={styles.activeStripClear}>Clear</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.filterTextCol}>
-              <Text style={styles.filterLabel}>Active filter</Text>
-              <Text style={styles.filterValue}>{category.label}</Text>
-            </View>
-            <View style={styles.countPill}>
-              <Text style={styles.countPillText}>{filteredProperties.length} found</Text>
-            </View>
-          </View> */}
+          )}
         </LinearGradient>
-
-
 
         <FlatList
           data={filteredProperties}
@@ -184,13 +208,307 @@ export function ViewPropertyList({ category, onBack, onFilterPress = () => { } }
           contentContainerStyle={styles.listContent}
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={styles.cardGap} />}
-
+          ListHeaderComponent={
+            filteredProperties.length > 0 ? (
+              <Text style={styles.listIntro}>
+                {filteredProperties.length} propert{filteredProperties.length === 1 ? 'y' : 'ies'} found
+                {fc > 0 ? ` · ${fc} filter${fc > 1 ? 's' : ''} applied` : ''}
+              </Text>
+            ) : (
+              <View style={styles.emptyWrap}>
+                <View style={styles.emptyIcon}>
+                  <Ionicons name="search-outline" size={30} color="#94A3B8" />
+                </View>
+                <Text style={styles.emptyTitle}>No properties found</Text>
+                <Text style={styles.emptySub}>Try adjusting your filters.</Text>
+                <TouchableOpacity style={styles.emptyBtn} onPress={() => setSheetFilters({ ...DEFAULT_SHEET_FILTERS })} activeOpacity={0.8}>
+                  <Text style={styles.emptyBtnText}>Clear filters</Text>
+                </TouchableOpacity>
+              </View>
+            )
+          }
           renderItem={({ item }) => (
             <PropertyCard property={item} variant="listing" onPress={() => setDetailProperty(item)} style={styles.card} />
           )}
         />
       </SafeAreaView>
+
+      <PropertyFilterSheet
+        visible={filterSheetOpen}
+        filters={sheetFilters}
+        onApply={handleApply}
+        onClose={() => setFilterSheetOpen(false)}
+      />
     </View>
+  );
+}
+
+/* ─── filter sheet constants ─────────────────────────────────────────────────── */
+const BHK_OPTS = ['All', 'Studio', '1 BHK', '2 BHK', '3 BHK', '4+ BHK'];
+const FURNISH_OPTS = ['All', 'Unfurnished', 'Semi-furnished', 'Fully Furnished'];
+const BATH_OPTS = ['All', '1', '2', '3', '4+'];
+const FACING_OPTS = ['All', 'East', 'West', 'North', 'South', 'Front', 'Corner'];
+const BUDGET_PRESETS = [
+  { label: 'All', min: '', max: '' },
+  { label: '< 10k', min: '', max: '10000' },
+  { label: '10k–15k', min: '10000', max: '15000' },
+  { label: '15k–20k', min: '15000', max: '20000' },
+  { label: '20k–30k', min: '20000', max: '30000' },
+  { label: '30k–40k', min: '30000', max: '40000' },
+  { label: '40k+', min: '40000', max: '' },
+];
+
+const DEFAULT_SHEET_FILTERS = {
+  bhk: 'All',
+  furnishing: 'All',
+  bathrooms: 'All',
+  facing: 'All',
+  minPrice: '',
+  maxPrice: '',
+};
+
+function priceNum(s) { return parseFloat(String(s || '0').replace(/,/g, '')) || 0; }
+
+function countSheetFilters(f) {
+  let n = 0;
+  if (f.bhk !== 'All') n++;
+  if (f.furnishing !== 'All') n++;
+  if (f.bathrooms !== 'All') n++;
+  if (f.facing !== 'All') n++;
+  if (f.minPrice || f.maxPrice) n++;
+  return n;
+}
+
+/* ── small chip ── */
+function FChip({ label, selected, onPress }) {
+  return (
+    <TouchableOpacity
+      style={[fs.chip, selected && fs.chipSel]}
+      onPress={onPress}
+      activeOpacity={0.75}
+    >
+      {selected && <Ionicons name="checkmark" size={11} color={ACCENT} style={{ marginRight: 2 }} />}
+      <Text style={[fs.chipText, selected && fs.chipSelText]}>{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+/* ── section label ── */
+function FLabel({ color = ACCENT, children }) {
+  return (
+    <View style={fs.secRow}>
+      <View style={[fs.secBar, { backgroundColor: color }]} />
+      <Text style={fs.secLabel}>{children}</Text>
+    </View>
+  );
+}
+
+
+/* ─── PropertyFilterSheet ────────────────────────────────────────────────────── */
+function PropertyFilterSheet({ visible, filters, onApply, onClose }) {
+  const insets = useSafeAreaInsets();
+  const [draft, setDraft] = useState({ ...filters });
+
+  useEffect(() => { if (visible) setDraft({ ...filters }); }, [visible, filters]);
+
+  const set = (k, v) => setDraft((p) => ({ ...p, [k]: v }));
+  const fc = countSheetFilters(draft);
+
+  const activePreset = BUDGET_PRESETS.find(
+    (p) => p.min === draft.minPrice && p.max === draft.maxPrice,
+  ) ?? null;
+
+  return (
+    <Modal
+      visible={visible}
+      animationType="slide"
+      transparent
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      <View style={fs.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} activeOpacity={1} />
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={fs.avoidWrap}
+        >
+          <View style={[fs.sheet, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            {/* handle */}
+            <View style={fs.handle} />
+
+            {/* header */}
+            <View style={fs.header}>
+              <TouchableOpacity style={fs.closeBtn} onPress={onClose} activeOpacity={0.8}>
+                <Ionicons name="close" size={20} color={TEXT.primary} />
+              </TouchableOpacity>
+              <Text style={fs.headerTitle}>Filters</Text>
+              <TouchableOpacity
+                style={fs.resetBtn}
+                onPress={() => setDraft({ ...DEFAULT_SHEET_FILTERS })}
+                activeOpacity={0.8}
+              >
+                <Text style={[fs.resetText, fc === 0 && { color: '#CBD5E1' }]}>Reset all</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* active badge */}
+            {fc > 0 && (
+              <View style={fs.activeBanner}>
+                <Ionicons name="funnel" size={13} color={ACCENT} />
+                <Text style={fs.activeBannerText}>{fc} filter{fc > 1 ? 's' : ''} active</Text>
+              </View>
+            )}
+
+            <ScrollView
+              style={fs.scroll}
+              contentContainerStyle={fs.scrollContent}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              {/* BUDGET */}
+              <View style={fs.section}>
+                <FLabel color="#22C55E">Budget (AED / month)</FLabel>
+                {/* preset grid */}
+                <View style={fs.presetGrid}>
+                  {BUDGET_PRESETS.map((p) => {
+                    const sel = activePreset?.label === p.label;
+                    return (
+                      <TouchableOpacity
+                        key={p.label}
+                        style={[fs.presetCell, sel && fs.presetCellSel]}
+                        onPress={() => { set('minPrice', p.min); set('maxPrice', p.max); }}
+                        activeOpacity={0.78}
+                      >
+                        {sel && <Ionicons name="checkmark-circle" size={12} color={ACCENT} />}
+                        <Text style={[fs.presetText, sel && fs.presetTextSel]}>{p.label}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+                {/* custom min / max */}
+                <View style={fs.budgetRow}>
+                  <View style={[fs.budgetBox, draft.minPrice && fs.budgetBoxActive]}>
+                    <Text style={fs.budgetLbl}>MIN</Text>
+                    <TextInput
+                      style={fs.budgetField}
+                      placeholder="0"
+                      placeholderTextColor="#CBD5E1"
+                      value={draft.minPrice}
+                      onChangeText={(v) => set('minPrice', v)}
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                    />
+                    <Text style={fs.budgetCcy}>AED</Text>
+                  </View>
+                  <View style={fs.budgetConn}>
+                    <View style={[fs.budgetLine, (draft.minPrice || draft.maxPrice) && fs.budgetLineActive]} />
+                    <Text style={fs.budgetTo}>to</Text>
+                    <View style={[fs.budgetLine, (draft.minPrice || draft.maxPrice) && fs.budgetLineActive]} />
+                  </View>
+                  <View style={[fs.budgetBox, draft.maxPrice && fs.budgetBoxActive]}>
+                    <Text style={fs.budgetLbl}>MAX</Text>
+                    <TextInput
+                      style={fs.budgetField}
+                      placeholder="Any"
+                      placeholderTextColor="#CBD5E1"
+                      value={draft.maxPrice}
+                      onChangeText={(v) => set('maxPrice', v)}
+                      keyboardType="numeric"
+                      returnKeyType="done"
+                    />
+                    <Text style={fs.budgetCcy}>AED</Text>
+                  </View>
+                </View>
+                {(draft.minPrice || draft.maxPrice) && (
+                  <View style={fs.budgetSummary}>
+                    <Ionicons name="cash-outline" size={13} color={ACCENT} />
+                    <Text style={fs.budgetSummaryText}>
+                      {draft.minPrice ? `AED ${priceNum(draft.minPrice).toLocaleString()}` : 'No min'}
+                      {'  →  '}
+                      {draft.maxPrice ? `AED ${priceNum(draft.maxPrice).toLocaleString()}` : 'No max'}
+                    </Text>
+                    <TouchableOpacity onPress={() => { set('minPrice', ''); set('maxPrice', ''); }} activeOpacity={0.8}>
+                      <Ionicons name="close-circle" size={15} color="#94A3B8" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+
+              {/* BHK */}
+              <View style={fs.section}>
+                <FLabel color={ACCENT}>BHK / Configuration</FLabel>
+                <View style={fs.chipRow}>
+                  {BHK_OPTS.map((o) => (
+                    <FChip key={o} label={o} selected={draft.bhk === o} onPress={() => set('bhk', o)} />
+                  ))}
+                </View>
+              </View>
+
+              {/* FURNISHING */}
+              <View style={fs.section}>
+                <FLabel color="#8B5CF6">Furnishing</FLabel>
+                <View style={fs.chipRow}>
+                  {FURNISH_OPTS.map((o) => (
+                    <FChip key={o} label={o} selected={draft.furnishing === o} onPress={() => set('furnishing', o)} />
+                  ))}
+                </View>
+              </View>
+
+              {/* BATHROOMS */}
+              <View style={fs.section}>
+                <FLabel color="#06B6D4">Bathrooms</FLabel>
+                <View style={fs.chipRow}>
+                  {BATH_OPTS.map((o) => (
+                    <FChip key={o} label={o} selected={draft.bathrooms === o} onPress={() => set('bathrooms', o)} />
+                  ))}
+                </View>
+              </View>
+
+              {/* FACING */}
+              <View style={[fs.section, { borderBottomWidth: 0 }]}>
+                <FLabel color="#F59E0B">Facing</FLabel>
+                <View style={fs.chipRow}>
+                  {FACING_OPTS.map((o) => (
+                    <FChip key={o} label={o} selected={draft.facing === o} onPress={() => set('facing', o)} />
+                  ))}
+                </View>
+              </View>
+            </ScrollView>
+
+            {/* apply footer */}
+            <View style={fs.footer}>
+              <TouchableOpacity
+                style={[fs.footReset, fc === 0 && fs.footResetDim]}
+                onPress={() => setDraft({ ...DEFAULT_SHEET_FILTERS })}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="refresh-outline" size={15} color={fc ? TEXT.secondary : '#CBD5E1'} />
+                <Text style={[fs.footResetText, fc === 0 && { color: '#CBD5E1' }]}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={fs.applyBtn}
+                onPress={() => onApply(draft)}
+                activeOpacity={0.88}
+              >
+                <LinearGradient
+                  colors={[ACCENT_LIGHT, ACCENT, ACCENT_DARK]}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                  style={fs.applyGrad}
+                >
+                  <Ionicons name="checkmark-circle" size={18} color="#fff" />
+                  <Text style={fs.applyText}>Apply filters</Text>
+                  {fc > 0 && (
+                    <View style={fs.applyBadge}>
+                      <Text style={fs.applyBadgeText}>{fc}</Text>
+                    </View>
+                  )}
+                </LinearGradient>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    </Modal>
   );
 }
 
@@ -597,6 +915,170 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 0,
   },
+  filterDot: {
+    position: 'absolute', top: 6, right: 6,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: '#FCD34D', borderWidth: 1.5, borderColor: 'rgba(30,58,138,0.6)',
+  },
+  activeStrip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    marginBottom: 8, paddingHorizontal: 4,
+  },
+  activeStripText: { flex: 1, fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.85)' },
+  activeStripClear: { fontSize: 12, fontWeight: '800', color: '#FCD34D' },
+  emptyWrap: { alignItems: 'center', paddingTop: 60, paddingHorizontal: 32 },
+  emptyIcon: {
+    width: 64, height: 64, borderRadius: 32, backgroundColor: '#F1F5F9',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 16,
+  },
+  emptyTitle: { fontSize: 17, fontWeight: '800', color: TEXT.primary, marginBottom: 6 },
+  emptySub: { fontSize: 13, color: TEXT.secondary, textAlign: 'center', lineHeight: 19, marginBottom: 18 },
+  emptyBtn: {
+    backgroundColor: '#EFF6FF', borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10,
+    borderWidth: 1.5, borderColor: ACCENT,
+  },
+  emptyBtnText: { fontSize: 13, fontWeight: '700', color: ACCENT },
+});
+
+/* ─── filter sheet styles ────────────────────────────────────────────────────── */
+const fs = StyleSheet.create({
+  overlay: {
+    flex: 1, backgroundColor: 'rgba(15,23,42,0.5)',
+    justifyContent: 'flex-end',
+  },
+  avoidWrap: { justifyContent: 'flex-end', flex: 1 },
+  sheet: {
+    backgroundColor: '#F8FAFC',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    height: '85%',
+    flexDirection: 'column',
+    borderWidth: 1, borderColor: 'rgba(15,23,42,0.08)',
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -6 }, shadowOpacity: 0.12, shadowRadius: 20 },
+      android: { elevation: 24 },
+    }),
+  },
+  handle: {
+    width: 40, height: 4, borderRadius: 2, backgroundColor: '#CBD5E1',
+    alignSelf: 'center', marginTop: 12, marginBottom: 4,
+  },
+
+  /* header */
+  header: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 16, paddingVertical: 14,
+    backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+  },
+  closeBtn: {
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: '#F1F5F9', alignItems: 'center', justifyContent: 'center',
+  },
+  headerTitle: {
+    flex: 1, textAlign: 'center', fontSize: 17, fontWeight: '800',
+    color: TEXT.primary, letterSpacing: -0.3,
+  },
+  resetBtn: { paddingHorizontal: 8, paddingVertical: 6 },
+  resetText: { fontSize: 13.5, fontWeight: '700', color: '#DC2626' },
+
+  /* active banner */
+  activeBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#EFF6FF', paddingHorizontal: 16, paddingVertical: 8,
+    borderBottomWidth: 1, borderBottomColor: '#BFDBFE',
+  },
+  activeBannerText: { fontSize: 12.5, fontWeight: '700', color: ACCENT },
+
+  /* scroll */
+  scroll: { flex: 1 },
+  scrollContent: { paddingBottom: 12 },
+
+  /* sections */
+  section: {
+    backgroundColor: '#fff', paddingHorizontal: 16,
+    paddingTop: 18, paddingBottom: 10,
+    marginBottom: 8, borderBottomWidth: 1, borderBottomColor: '#F1F5F9',
+  },
+  secRow: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  secBar: { width: 4, height: 16, borderRadius: 2 },
+  secLabel: { fontSize: 11.5, fontWeight: '800', color: TEXT.primary, textTransform: 'uppercase', letterSpacing: 0.6 },
+
+  /* chips */
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 4 },
+  chip: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingHorizontal: 13, paddingVertical: 8,
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  chipSel: { borderColor: ACCENT, backgroundColor: '#EFF6FF' },
+  chipText: { fontSize: 13, fontWeight: '600', color: TEXT.secondary },
+  chipSelText: { color: ACCENT, fontWeight: '700' },
+
+  /* budget */
+  presetGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 7, marginBottom: 14 },
+  presetCell: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 20, borderWidth: 1.5, borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  presetCellSel: { borderColor: ACCENT, backgroundColor: '#EFF6FF' },
+  presetText: { fontSize: 12.5, fontWeight: '600', color: TEXT.secondary },
+  presetTextSel: { color: ACCENT, fontWeight: '800' },
+  budgetRow: { flexDirection: 'row', alignItems: 'center', gap: 0, marginBottom: 10 },
+  budgetBox: {
+    flex: 1, backgroundColor: '#F8FAFC',
+    borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0',
+    paddingHorizontal: 12, paddingVertical: 10,
+  },
+  budgetBoxActive: { borderColor: ACCENT, backgroundColor: '#EFF6FF' },
+  budgetLbl: { fontSize: 9, fontWeight: '800', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 3 },
+  budgetField: { fontSize: 20, fontWeight: '800', color: TEXT.primary, padding: 0 },
+  budgetCcy: { fontSize: 10, fontWeight: '700', color: '#94A3B8', marginTop: 2 },
+  budgetConn: { width: 36, alignItems: 'center', justifyContent: 'center', gap: 3 },
+  budgetLine: { flex: 1, width: 1.5, backgroundColor: '#E2E8F0', maxHeight: 16 },
+  budgetLineActive: { backgroundColor: ACCENT },
+  budgetTo: { fontSize: 10, fontWeight: '700', color: '#94A3B8' },
+  budgetSummary: {
+    flexDirection: 'row', alignItems: 'center', gap: 7,
+    backgroundColor: '#EFF6FF', borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 8,
+    borderWidth: 1, borderColor: '#BFDBFE', marginBottom: 4,
+  },
+  budgetSummaryText: { flex: 1, fontSize: 12.5, fontWeight: '700', color: ACCENT },
+
+  /* footer */
+  footer: {
+    flexDirection: 'row', alignItems: 'center', gap: 10,
+    paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12,
+    backgroundColor: '#fff',
+    borderTopWidth: 1, borderTopColor: '#F1F5F9',
+    ...Platform.select({
+      ios: { shadowColor: '#000', shadowOffset: { width: 0, height: -3 }, shadowOpacity: 0.06, shadowRadius: 10 },
+      android: { elevation: 12 },
+    }),
+  },
+  footReset: {
+    flexDirection: 'row', alignItems: 'center', gap: 5,
+    paddingHorizontal: 16, paddingVertical: 13,
+    borderRadius: 12, borderWidth: 1.5, borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  footResetDim: { borderColor: '#F1F5F9' },
+  footResetText: { fontSize: 13, fontWeight: '700', color: TEXT.secondary },
+  applyBtn: { flex: 1, borderRadius: 14, overflow: 'hidden' },
+  applyGrad: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    paddingVertical: 15, gap: 8,
+  },
+  applyText: { fontSize: 15, fontWeight: '800', color: '#fff', letterSpacing: 0.1 },
+  applyBadge: {
+    minWidth: 22, height: 22, borderRadius: 11, paddingHorizontal: 6,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  applyBadgeText: { fontSize: 11, fontWeight: '800', color: '#fff' },
 });
 
 /** Alias for the requested screen name */
