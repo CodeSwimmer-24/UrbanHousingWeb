@@ -420,29 +420,20 @@ export function PropertyDetailScreen({ property, category, onBack, onContactPres
       >
         <View style={styles.sheet}>
           <Text style={styles.title}>{d.title}</Text>
+          {locationSubtitle !== '—' && (
+            <View style={styles.titleLocationRow}>
+              <Ionicons name="location-outline" size={13} color={ACCENT} />
+              <Text style={styles.titleLocationText} numberOfLines={1}>
+                {locationSubtitle}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.badgeRow}>
             <View style={styles.typeBadge}>
               <Text style={styles.typeBadgeText}>{badgeLabel}</Text>
             </View>
           </View>
-          <View
-            style={styles.locationRow}
-            accessible
-            accessibilityRole="text"
-            accessibilityLabel={locationSubtitle}
-          >
-            <View style={styles.locationIconBubble}>
-              <Ionicons name="location" size={18} color={ACCENT} />
-            </View>
-            <View style={styles.locationTextBlock}>
-              <Text style={styles.locationEyebrow}>Location</Text>
-              <Text style={styles.locationLine} numberOfLines={2}>
-                {locationSubtitle}
-              </Text>
-            </View>
-          </View>
-
           <View style={styles.quickStatsRow}>
             {isOffice ? (
               <>
@@ -554,6 +545,102 @@ export function PropertyDetailScreen({ property, category, onBack, onContactPres
               </View>
             </View>
           ) : null}
+
+          {/* ── Location card ── */}
+          <View style={styles.sectionBlock}>
+            <Text style={styles.sectionHeading}>Location</Text>
+            <View style={styles.locationCard}>
+              {/* map placeholder */}
+              <View style={styles.locationMapBox}>
+                <LinearGradient
+                  colors={['#DBEAFE', '#EFF6FF', '#F0FDF4']}
+                  start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                {/* grid lines — heights anchored in pixels; map box is 120px */}
+                {[30, 60, 90].map((px) => (
+                  <View key={`h${px}`} style={[styles.mapGridLine, { top: px, left: 0, right: 0, height: StyleSheet.hairlineWidth }]} />
+                ))}
+                <View style={[styles.mapGridLine, { left: '25%', top: 0, bottom: 0, width: StyleSheet.hairlineWidth }]} />
+                <View style={[styles.mapGridLine, { left: '50%', top: 0, bottom: 0, width: StyleSheet.hairlineWidth }]} />
+                <View style={[styles.mapGridLine, { left: '75%', top: 0, bottom: 0, width: StyleSheet.hairlineWidth }]} />
+                {/* road lines */}
+                <View style={styles.mapRoad1} />
+                <View style={styles.mapRoad2} />
+                {/* pin */}
+                <View style={styles.mapPinWrap}>
+                  <View style={styles.mapPinRing2} />
+                  <View style={styles.mapPinRing1} />
+                  <View style={styles.mapPinDot}>
+                    <Ionicons name="location" size={18} color="#fff" />
+                  </View>
+                </View>
+                {/* "Open map" pill */}
+                <View style={styles.mapOpenBtn}>
+                  <Ionicons name="navigate-outline" size={12} color={ACCENT} />
+                  <Text style={styles.mapOpenText}>View on map</Text>
+                </View>
+              </View>
+
+              {/* address body */}
+              <View style={styles.locationBody}>
+                <View style={styles.locationBodyRow}>
+                  <View style={styles.locationPinSmall}>
+                    <Ionicons name="location" size={14} color={ACCENT} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.locationEyebrow}>Address</Text>
+                    <Text style={styles.locationLine} numberOfLines={3}>
+                      {locationSubtitle}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* divider */}
+                <View style={styles.locationDivider} />
+
+                {/* action row */}
+                <View style={styles.locationActions}>
+                  <Pressable
+                    style={({ pressed }) => [styles.locationActionBtn, pressed && styles.pressed]}
+                    accessibilityLabel="Copy address"
+                    onPress={() => {
+                      const addr = d.fullAddress || locationSubtitle;
+                      if (addr) Clipboard.setStringAsync(addr);
+                      Alert.alert('Copied', 'Address copied to clipboard.');
+                    }}
+                  >
+                    <Ionicons name="copy-outline" size={14} color={ACCENT} />
+                    <Text style={styles.locationActionText}>Copy</Text>
+                  </Pressable>
+                  <View style={styles.locationActionSep} />
+                  <Pressable
+                    style={({ pressed }) => [styles.locationActionBtn, pressed && styles.pressed]}
+                    accessibilityLabel="Directions"
+                    onPress={() => {
+                      const query = encodeURIComponent(d.fullAddress || locationSubtitle);
+                      Linking.openURL(`https://maps.google.com/?q=${query}`);
+                    }}
+                  >
+                    <Ionicons name="navigate-outline" size={14} color={ACCENT} />
+                    <Text style={styles.locationActionText}>Directions</Text>
+                  </Pressable>
+                  <View style={styles.locationActionSep} />
+                  <Pressable
+                    style={({ pressed }) => [styles.locationActionBtn, pressed && styles.pressed]}
+                    accessibilityLabel="Share location"
+                    onPress={() => {
+                      const addr = d.fullAddress || locationSubtitle;
+                      Linking.openURL(`sms:?body=${encodeURIComponent(addr)}`);
+                    }}
+                  >
+                    <Ionicons name="share-social-outline" size={14} color={ACCENT} />
+                    <Text style={styles.locationActionText}>Share</Text>
+                  </Pressable>
+                </View>
+              </View>
+            </View>
+          </View>
 
           <View style={{ height: 8 }} />
         </View>
@@ -1083,6 +1170,18 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     marginTop: 22,
   },
+  titleLocationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 5,
+  },
+  titleLocationText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: TEXT.secondary,
+    flex: 1,
+  },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1101,55 +1200,175 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: ACCENT,
   },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginTop: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    gap: 12,
-    borderRadius: 16,
-    backgroundColor: ICON_BUBBLE,
+  locationCard: {
+    marginTop: 16,
+    borderRadius: 20,
+    overflow: 'hidden',
     borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(37, 99, 235, 0.14)',
-  },
-  locationIconBubble: {
-    width: 40,
-    height: 40,
-    borderRadius: 14,
+    borderColor: 'rgba(37, 99, 235, 0.15)',
     backgroundColor: SURFACE,
+    ...Platform.select({
+      ios: {
+        shadowColor: ACCENT_DEEP,
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 12,
+      },
+      android: { elevation: 4 },
+      default: {},
+    }),
+  },
+  locationMapBox: {
+    height: 120,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  mapGridLine: {
+    position: 'absolute',
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+  },
+  mapRoad1: {
+    position: 'absolute',
+    top: '50%',
+    left: 0,
+    right: 0,
+    height: 8,
+    backgroundColor: 'rgba(255,255,255,0.65)',
+    marginTop: -4,
+  },
+  mapRoad2: {
+    position: 'absolute',
+    left: '40%',
+    top: 0,
+    bottom: 0,
+    width: 8,
+    backgroundColor: 'rgba(255,255,255,0.65)',
+    marginLeft: -4,
+  },
+  mapPinWrap: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapPinRing2: {
+    position: 'absolute',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(37, 99, 235, 0.10)',
+  },
+  mapPinRing1: {
+    position: 'absolute',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'rgba(37, 99, 235, 0.18)',
+  },
+  mapPinDot: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: ACCENT,
     alignItems: 'center',
     justifyContent: 'center',
     ...Platform.select({
       ios: {
-        shadowColor: ACCENT_DEEP,
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.12,
-        shadowRadius: 3,
+        shadowColor: ACCENT,
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.4,
+        shadowRadius: 6,
       },
-      android: { elevation: 2 },
+      android: { elevation: 6 },
       default: {},
     }),
   },
-  locationTextBlock: {
-    flex: 1,
-    minWidth: 0,
-    paddingTop: 2,
+  mapOpenBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(37,99,235,0.2)',
   },
-  locationEyebrow: {
-    fontSize: 8,
+  mapOpenText: {
+    fontSize: 11,
     fontWeight: '600',
     color: ACCENT,
-    letterSpacing: 1,
+    letterSpacing: 0.2,
+  },
+  locationBody: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 6,
+  },
+  locationBodyRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  locationPinSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    backgroundColor: 'rgba(37,99,235,0.08)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  locationDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: 'rgba(37,99,235,0.1)',
+    marginTop: 12,
+    marginBottom: 2,
+  },
+  locationActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  locationActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    paddingVertical: 10,
+  },
+  locationActionSep: {
+    width: StyleSheet.hairlineWidth,
+    height: 18,
+    backgroundColor: 'rgba(37,99,235,0.15)',
+  },
+  locationActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: ACCENT,
+    letterSpacing: 0.1,
+  },
+  locationEyebrow: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: ACCENT,
+    letterSpacing: 1.2,
     textTransform: 'uppercase',
-    marginBottom: 4,
+    marginBottom: 3,
+    opacity: 0.8,
   },
   locationLine: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: TEXT.primary,
     lineHeight: 20,
-    letterSpacing: -0.3,
+    letterSpacing: -0.2,
   },
   ratingPill: {
     flexDirection: 'row',
